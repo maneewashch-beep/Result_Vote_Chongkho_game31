@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบโหวตชุดกีฬาสี - ชงโคเกมส์ ครั้งที่ 31</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%);
+            min-height: 100vh;
+        }
+        
+        /* Glassmorphism & Card Styles */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Custom Fancy Select Wrapper */
+        .fancy-select-wrapper {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .fancy-select-wrapper:focus-within {
+            transform: translateY(-2px);
+        }
+        .fancy-select {
+            appearance: none;
+            background-color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fancy-select:focus {
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+            border-color: #7c3aed;
+        }
+        .select-icon {
+            pointer-events: none;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.3s ease;
+        }
+        .fancy-select-wrapper:focus-within .select-icon {
+            transform: translateY(-50%) rotate(180deg);
+            color: #7c3aed;
+        }
+
+        /* Button Selection Styles */
+        .type-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid #f3f4f6;
+        }
+        .type-btn:hover {
+            border-color: #a78bfa;
+            background-color: #f9fafb;
+            transform: translateY(-2px);
+        }
+        .type-btn.active {
+            border-color: #7c3aed;
+            background: linear-gradient(to bottom right, #7c3aed, #6d28d9);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+            transform: translateY(-2px);
+        }
+        .type-btn.active svg { stroke: white; }
+        
+        /* Step Animations */
+        .step-content {
+            display: none;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        .step-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Shirt Card */
+        .design-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .design-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .design-card.selected {
+            border-color: #7c3aed;
+            background-color: #f5f3ff;
+            transform: scale(1.02);
+        }
+
+        /* Ticket/Result Style */
+        .ticket-stub {
+            background-image: radial-gradient(circle at 0 50%, transparent 10px, white 11px), radial-gradient(circle at 100% 50%, transparent 10px, white 11px);
+            background-position: 0 50%, 100% 50%;
+            background-repeat: no-repeat;
+            background-size: 50% 100%;
+        }
+    </style>
+</head>
+<body class="py-6 px-4 text-gray-800 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-3xl">
+        
+        <!-- Header Section -->
+        <div class="text-center mb-6 animate-[fadeIn_0.5s_ease-out]">
+            <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-white shadow-md text-purple-600 mb-4">
+                <i data-lucide="trophy" class="w-8 h-8"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-1">โหวตชุดกีฬาสี</h1>
+            <p class="text-purple-700 font-medium text-lg">ชงโคเกมส์ ครั้งที่ 31 (2568)</p>
+            
+            <!-- Progress Steps (Hidden in Step 3) -->
+            <div id="progress-container" class="flex justify-center items-center mt-6 gap-3 transition-opacity duration-300">
+                <div id="progress-1" class="w-3 h-3 rounded-full bg-purple-600 transition-all duration-300"></div>
+                <div class="w-10 h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="progress-line" class="h-full bg-purple-600 w-0 transition-all duration-500"></div>
+                </div>
+                <div id="progress-2" class="w-3 h-3 rounded-full bg-gray-300 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="glass-card rounded-3xl p-6 md:p-10 relative overflow-hidden">
+            
+            <!-- Decorative Background Element -->
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+
+            <form id="voteForm" name="vote-form" onsubmit="handleFinalSubmit(event)">
+                
+                <!-- ================= STEP 1: ข้อมูลส่วนตัว ================= -->
+                <div id="step1" class="step-content active">
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <span class="bg-purple-100 text-purple-700 w-8 h-8 rounded-lg flex items-center justify-center text-sm">1</span>
+                            ระบุตัวตนของคุณ
+                        </h2>
+
+                        <!-- 1. เลือกสถานะ (Buttons) -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-600 mb-3 ml-1">สถานะของคุณ <span class="text-red-500">*</span></label>
+                            <input type="hidden" id="userType" name="type">
+                            <div class="grid grid-cols-3 gap-3">
+                                <button type="button" onclick="selectUserType('student')" id="btn-student" class="type-btn rounded-xl p-3 md:p-4 flex flex-col items-center justify-center gap-2 h-24 md:h-28">
+                                    <i data-lucide="graduation-cap" class="w-6 h-6 md:w-8 md:h-8"></i>
+                                    <span class="text-xs md:text-sm font-medium">นักเรียน</span>
+                                </button>
+                                <button type="button" onclick="selectUserType('teacher')" id="btn-teacher" class="type-btn rounded-xl p-3 md:p-4 flex flex-col items-center justify-center gap-2 h-24 md:h-28">
+                                    <i data-lucide="user-check" class="w-6 h-6 md:w-8 md:h-8"></i>
+                                    <span class="text-xs md:text-sm font-medium">ครู</span>
+                                </button>
+                                <button type="button" onclick="selectUserType('admin')" id="btn-admin" class="type-btn rounded-xl p-3 md:p-4 flex flex-col items-center justify-center gap-2 h-24 md:h-28">
+                                    <i data-lucide="briefcase" class="w-6 h-6 md:w-8 md:h-8"></i>
+                                    <span class="text-xs md:text-sm font-medium">ผู้บริหาร</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ส่วนที่จะแสดงหลังจากเลือกสถานะแล้ว -->
+                        <div id="additionalInfoSection" class="hidden animate-[fadeIn_0.5s_ease-out]">
+                            
+                            <!-- 2. ชื่อ-นามสกุล -->
+                            <div class="mb-6 group">
+                                <label class="block text-sm font-semibold text-gray-600 mb-2 ml-1">ชื่อ-นามสกุล</label>
+                                <div class="relative">
+                                    <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-purple-600 transition-colors"></i>
+                                    <input type="text" id="fullname" name="name" placeholder="กรอกชื่อ-นามสกุล..." 
+                                        class="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-purple-100 focus:border-purple-500 outline-none transition-all duration-300">
+                                </div>
+                            </div>
+
+                            <!-- 3. ข้อมูลเพิ่มเติม (Dynamic: แผนก/ตำแหน่ง) -->
+                            <div id="dynamicContent" class="space-y-5">
+                                <!-- Student -->
+                                <div id="studentSection" class="hidden space-y-4">
+                                    <div class="fancy-select-wrapper">
+                                        <label class="block text-sm font-semibold text-gray-600 mb-2 ml-1">แผนกวิชา</label>
+                                        <div class="relative">
+                                            <select id="department" name="department" class="fancy-select w-full p-4 pr-10 rounded-xl border border-gray-200 outline-none cursor-pointer">
+                                                <option value="" disabled selected>-- เลือกแผนกวิชา --</option>
+                                                <option value="เทคโนโลยีสารสนเทศ">เทคโนโลยีสารสนเทศ</option>
+                                                <option value="เทคโนโลยีธุรกิจดิจิทัล">เทคโนโลยีธุรกิจดิจิทัล</option>
+                                                <option value="การบัญชี">การบัญชี</option>
+                                                <option value="การตลาด">การตลาด</option>
+                                                <option value="ช่างยนต์">ช่างยนต์</option>
+                                                <option value="ช่างกลโรงงาน">ช่างกลโรงงาน</option>
+                                                <option value="ช่างไฟฟ้า">ช่างไฟฟ้า</option>
+                                                <option value="ช่างก่อสร้าง">ช่างก่อสร้าง</option>
+                                                <option value="เทคโนโลยีอิเล็กทรอนิกส์">เทคโนโลยีอิเล็กทรอนิกส์</option>
+                                                <option value="เทคโนโลยีฐานวิทยาศาสตร์">เทคโนโลยีฐานวิทยาศาสตร์</option>
+                                                <option value="แปรรูปอาหาร">แปรรูปอาหาร</option>
+                                            </select>
+                                            <i data-lucide="chevron-down" class="select-icon w-5 h-5 text-gray-400"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="fancy-select-wrapper">
+                                        <label class="block text-sm font-semibold text-gray-600 mb-2 ml-1">ระดับชั้น</label>
+                                        <div class="relative">
+                                            <select id="classLevel" name="level" class="fancy-select w-full p-4 pr-10 rounded-xl border border-gray-200 outline-none cursor-pointer">
+                                                <option value="" disabled selected>-- เลือกระดับชั้น --</option>
+                                                <option value="ปวช.1">ปวช. 1</option>
+                                                <option value="ปวช.2">ปวช. 2</option>
+                                                <option value="ปวช.3">ปวช. 3</option>
+                                                <option value="ปวส.1">ปวส. 1</option>
+                                                <option value="ปวส.2">ปวส. 2</option>
+                                            </select>
+                                            <i data-lucide="chevron-down" class="select-icon w-5 h-5 text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Teacher -->
+                                <div id="teacherSection" class="hidden">
+                                    <label class="block text-sm font-semibold text-gray-600 mb-2 ml-1">ตำแหน่งของคุณ</label>
+                                    <input type="text" id="teacherPosition" name="position" placeholder="ระบุตำแหน่ง..." class="w-full p-4 rounded-xl border border-gray-200 bg-white focus:ring-4 focus:ring-purple-100 focus:border-purple-500 outline-none transition-all">
+                                </div>
+
+                                <!-- Admin -->
+                                <div id="adminSection" class="hidden">
+                                    <div class="fancy-select-wrapper">
+                                        <label class="block text-sm font-semibold text-gray-600 mb-2 ml-1">ตำแหน่งผู้บริหาร</label>
+                                        <div class="relative">
+                                            <select id="adminPosition" name="admin_position" class="fancy-select w-full p-4 pr-10 rounded-xl border border-gray-200 outline-none cursor-pointer">
+                                                <option value="" disabled selected>-- เลือกตำแหน่ง --</option>
+                                                <option value="ผู้อำนวยการ">ผู้อำนวยการ</option>
+                                                <option value="รองผู้อำนวยการ">รองผู้อำนวยการ</option>
+                                            </select>
+                                            <i data-lucide="chevron-down" class="select-icon w-5 h-5 text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-red-500 mt-2">* ระบบจะตรวจสอบรายชื่อผู้บริหาร หากชื่อไม่ถูกต้องจะไม่สามารถโหวตได้</p>
+                                </div>
+                            </div>
+
+                            <!-- Button Next -->
+                            <button type="button" onclick="goToStep2()" class="w-full py-4 mt-6 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2 group shadow-lg">
+                                ถัดไป: เลือกแบบเสื้อ
+                                <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <!-- ================= STEP 2: เลือกแบบเสื้อ ================= -->
+                <div id="step2" class="step-content">
+                    <div class="mb-8">
+                        <!-- ปุ่มกลับไปแก้ไขข้อมูล -->
+                        <button type="button" onclick="goToStep1()" class="text-sm text-gray-500 hover:text-purple-600 flex items-center gap-1 mb-4 transition-colors px-3 py-2 rounded-lg hover:bg-purple-50">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับไปตรวจสอบข้อมูล
+                        </button>
+
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <span class="bg-purple-100 text-purple-700 w-8 h-8 rounded-lg flex items-center justify-center text-sm">2</span>
+                            เลือกชุดที่ชอบ
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- Design 1 -->
+                            <label class="cursor-pointer group relative">
+                                <input type="radio" name="shirtVote" value="แบบที่ 1" class="hidden hidden-radio" onchange="updateCardStyle(this)">
+                                <div class="design-card rounded-2xl p-4 bg-white shadow-sm border border-gray-100 h-full">
+                                    <div class="bg-gray-100 rounded-xl mb-3 h-56 flex items-center justify-center relative overflow-hidden">
+                                        <!-- Placeholder Image -->
+                                        <div class="text-center text-gray-400">
+                                            <i data-lucide="shirt" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                            <span class="text-sm">รูปภาพแบบที่ 1</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-between items-center px-2">
+                                        <span class="font-bold text-gray-800">แบบที่ 1</span>
+                                        <div class="check-circle w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center text-white transition-colors">
+                                            <i data-lucide="check" class="w-4 h-4 opacity-0 transition-opacity"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- Design 2 -->
+                            <label class="cursor-pointer group relative">
+                                <input type="radio" name="shirtVote" value="แบบที่ 2" class="hidden hidden-radio" onchange="updateCardStyle(this)">
+                                <div class="design-card rounded-2xl p-4 bg-white shadow-sm border border-gray-100 h-full">
+                                    <div class="bg-gray-100 rounded-xl mb-3 h-56 flex items-center justify-center relative overflow-hidden">
+                                        <!-- Placeholder Image -->
+                                        <div class="text-center text-gray-400">
+                                            <i data-lucide="shirt" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                            <span class="text-sm">รูปภาพแบบที่ 2</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-between items-center px-2">
+                                        <span class="font-bold text-gray-800">แบบที่ 2</span>
+                                        <div class="check-circle w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center text-white transition-colors">
+                                            <i data-lucide="check" class="w-4 h-4 opacity-0 transition-opacity"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-xl hover:shadow-purple-500/30 hover:scale-[1.02] transition-all transform flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        ยืนยันการโหวต
+                    </button>
+                </div>
+
+                <!-- ================= STEP 3: ผลลัพธ์ (Result) ================= -->
+                <div id="step3" class="step-content text-center">
+                    <div class="mb-8">
+                        <div class="inline-flex items-center justify-center p-4 rounded-full bg-green-100 text-green-600 mb-6 shadow-sm animate-[bounce_1s_infinite]">
+                            <i data-lucide="check-circle-2" class="w-16 h-16"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">บันทึกผลโหวตสำเร็จ!</h2>
+                        <p class="text-gray-500">ขอบคุณสำหรับการมีส่วนร่วมในชงโคเกมส์</p>
+                    </div>
+
+                    <!-- Ticket / Card Summary -->
+                    <div class="bg-white rounded-2xl p-6 shadow-md border border-gray-100 max-w-sm mx-auto mb-8 relative">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-2xl"></div>
+                        
+                        <div class="text-left space-y-4">
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase tracking-wide">ชื่อ-นามสกุล</p>
+                                <p id="result-name" class="font-semibold text-lg text-gray-800">-</p>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <div>
+                                    <p class="text-xs text-gray-400 uppercase tracking-wide">สถานะ</p>
+                                    <p id="result-type" class="font-medium text-gray-700">-</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wide">รายละเอียด</p>
+                                    <p id="result-detail" class="font-medium text-gray-700">-</p>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-dashed border-gray-200 pt-4 mt-2">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">ผลการโหวต</p>
+                                <div class="flex items-center gap-2 text-purple-600">
+                                    <i data-lucide="shirt" class="w-5 h-5"></i>
+                                    <span id="result-vote" class="font-bold text-xl">-</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <p class="text-xs text-gray-300 text-center" id="result-timestamp">Timestamp</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Back to Home Button -->
+                    <button type="button" onclick="location.reload()" class="w-full md:w-auto px-8 py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2 mx-auto">
+                        <i data-lucide="home" class="w-5 h-5"></i>
+                        กลับสู่หน้าหลัก
+                    </button>
+                </div>
+
+            </form>
+        </div>
+        
+        <footer class="text-center mt-8 pb-4">
+             <p class="text-gray-400 text-xs">
+                 @2025 วิทยาลัยเทคนิคพังงา <br> พัฒนาโดย ชมรมวิชาชีพเทคโนโลยีสารสนเทศ 2569
+             </p>
+        </footer>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let currentStep = 1;
+
+        // =========================================================================
+        // ตั้งค่า Google Apps Script Web App URL ที่นี่
+        // =========================================================================
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXyCLRkFybJ_oW0feYq0sHEvOS5pYyUi0HyoO9-HfU5GHH5qAXX-DYPFmkTCoLZe8o/exec'; // นำ URL จากการ Deploy Web App มาใส่ที่นี่
+
+        const allowedAdmins = [
+            "นิรุตต์ ประยูรเจริญ",
+            "ขจรยศ ปลอดชูแก้ว",
+            "วิรัชชาติ ฉิมพานะ",
+            "กาญจนา ตัณทราวัฒน์พันธ์",
+            "กอบเกียจ ยังเจริญ"
+        ];
+
+        function selectUserType(type) {
+            document.getElementById('userType').value = type;
+            
+            ['student', 'teacher', 'admin'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if(t === type) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            const infoSection = document.getElementById('additionalInfoSection');
+            infoSection.classList.remove('hidden');
+            
+            document.getElementById('studentSection').classList.add('hidden');
+            document.getElementById('teacherSection').classList.add('hidden');
+            document.getElementById('adminSection').classList.add('hidden');
+
+            document.querySelectorAll('#dynamicContent select, #dynamicContent input').forEach(el => el.required = false);
+
+            if (type === 'student') {
+                document.getElementById('studentSection').classList.remove('hidden');
+                document.getElementById('department').required = true;
+                document.getElementById('classLevel').required = true;
+            } else if (type === 'teacher') {
+                document.getElementById('teacherSection').classList.remove('hidden');
+                document.getElementById('teacherPosition').required = true;
+            } else if (type === 'admin') {
+                document.getElementById('adminSection').classList.remove('hidden');
+                document.getElementById('adminPosition').required = true;
+            }
+        }
+
+        function normalizeName(name) {
+            return name.trim()
+                .replace(/^(นาย|นาง|นางสาว|ดร\.|ดร|ว่าที่ร้อยตรี|ผอ\.|รองฯ)/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function goToStep2() {
+            const fullnameRaw = document.getElementById('fullname').value;
+            const fullname = fullnameRaw.trim();
+            const userType = document.getElementById('userType').value;
+            
+            if (!userType) {
+                showError('กรุณาเลือกสถานะของคุณ');
+                return;
+            }
+            if (!fullname) {
+                showError('กรุณากรอกชื่อ-นามสกุล');
+                return;
+            }
+
+            if (userType === 'admin') {
+                const cleanInput = normalizeName(fullname);
+                let isMatch = false;
+
+                for (const admin of allowedAdmins) {
+                    const cleanAdmin = normalizeName(admin);
+                    if (cleanInput === cleanAdmin) {
+                        isMatch = true;
+                        break;
+                    }
+                }
+
+                if (!isMatch) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'แน่ใจใช่หรือไม่ว่าคุณคือผู้บริหาร?',
+                        text: 'ชื่อที่ท่านระบุไม่ตรงกับรายชื่อผู้บริหารในระบบ กรุณาตรวจสอบการสะกดชื่อ หรือเลือกสถานะอื่น',
+                        showCancelButton: true,
+                        confirmButtonColor: '#7c3aed',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'กลับไปแก้ไข',
+                        cancelButtonText: 'ปิดหน้าต่าง',
+                        reverseButtons: true
+                    });
+                    return; 
+                }
+
+                if(!document.getElementById('adminPosition').value) { 
+                    showError('กรุณาเลือกตำแหน่งผู้บริหาร'); 
+                    return; 
+                }
+            }
+
+            if (userType === 'student') {
+                if(!document.getElementById('department').value) { showError('กรุณาเลือกแผนกวิชา'); return; }
+                if(!document.getElementById('classLevel').value) { showError('กรุณาเลือกระดับชั้น'); return; }
+            } else if (userType === 'teacher') {
+                if(!document.getElementById('teacherPosition').value.trim()) { showError('กรุณาระบุตำแหน่ง'); return; }
+            }
+
+            switchStep(2);
+        }
+
+        function goToStep1() {
+            switchStep(1);
+        }
+
+        function switchStep(step) {
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3'); // New Step 3
+            
+            const progress1 = document.getElementById('progress-1');
+            const progress2 = document.getElementById('progress-2');
+            const progressLine = document.getElementById('progress-line');
+            const progressContainer = document.getElementById('progress-container');
+
+            // Hide all steps
+            step1.classList.remove('active');
+            step2.classList.remove('active');
+            step3.classList.remove('active');
+
+            if (step === 1) {
+                setTimeout(() => step1.classList.add('active'), 100);
+                progressLine.style.width = '0%';
+                progress2.classList.remove('bg-purple-600');
+                progress2.classList.add('bg-gray-300');
+                progressContainer.style.opacity = '1';
+            } else if (step === 2) {
+                setTimeout(() => step2.classList.add('active'), 100);
+                progressLine.style.width = '100%';
+                progress2.classList.remove('bg-gray-300');
+                progress2.classList.add('bg-purple-600');
+                progressContainer.style.opacity = '1';
+            } else if (step === 3) {
+                setTimeout(() => step3.classList.add('active'), 100);
+                progressContainer.style.opacity = '0'; // Hide progress bar on result page
+            }
+            
+            currentStep = step;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateCardStyle(radio) {
+            document.querySelectorAll('.design-card').forEach(card => {
+                card.classList.remove('selected');
+                const checkCircle = card.querySelector('.check-circle');
+                checkCircle.classList.remove('bg-purple-600', 'border-purple-600');
+                checkCircle.classList.add('border-gray-300');
+                checkCircle.querySelector('svg').classList.add('opacity-0');
+            });
+
+            if(radio.checked) {
+                const card = radio.parentElement.querySelector('.design-card');
+                card.classList.add('selected');
+                
+                const checkCircle = card.querySelector('.check-circle');
+                checkCircle.classList.remove('border-gray-300');
+                checkCircle.classList.add('bg-purple-600', 'border-purple-600');
+                checkCircle.querySelector('svg').classList.remove('opacity-0');
+            }
+        }
+
+        function handleFinalSubmit(e) {
+            e.preventDefault();
+            
+            const vote = document.querySelector('input[name="shirtVote"]:checked');
+            if(!vote) {
+                showError('กรุณาเลือกแบบเสื้อที่ต้องการ');
+                return;
+            }
+
+            const fullname = document.getElementById('fullname').value;
+            const userType = document.getElementById('userType').value;
+            const shirtChoice = vote.value;
+            
+            let dept = "-", role = "-";
+            if(userType === 'student') {
+                dept = document.getElementById('department').value;
+                role = document.getElementById('classLevel').value;
+            } else if(userType === 'teacher') {
+                dept = "ครู/บุคลากร";
+                role = document.getElementById('teacherPosition').value;
+            } else if(userType === 'admin') {
+                dept = "ผู้บริหาร";
+                role = document.getElementById('adminPosition').value;
+            }
+
+            const timestamp = new Date().toLocaleString('th-TH');
+
+            // เตรียมข้อมูลสำหรับส่ง
+            let formData = new FormData();
+            formData.append('timestamp', timestamp);
+            formData.append('name', fullname);
+            formData.append('type', userType);
+            formData.append('department', dept);
+            formData.append('detail', role);
+            formData.append('vote', shirtChoice);
+
+            // แสดงสถานะกำลังบันทึก
+            Swal.fire({
+                title: 'กำลังบันทึกข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // ตรวจสอบว่ามีการใส่ URL Google Script หรือยัง
+            if (GOOGLE_SCRIPT_URL) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    Swal.close();
+                    showResultPage(fullname, userType, role, shirtChoice, timestamp);
+                })
+                .catch(error => {
+                    console.error('Error!', error.message);
+                    Swal.close();
+                    // กรณี Error ก็ให้แสดงผลไปก่อน (ในที่นี้) หรือแจ้งเตือน
+                    showResultPage(fullname, userType, role, shirtChoice, timestamp);
+                });
+            } else {
+                // กรณี Demo (ไม่ได้เชื่อมต่อจริง)
+                setTimeout(() => {
+                    Swal.close();
+                    showResultPage(fullname, userType, role, shirtChoice, timestamp);
+                }, 1000);
+            }
+        }
+
+        // ฟังก์ชันแสดงหน้าผลลัพธ์ (Step 3) แทนการดาวน์โหลดไฟล์
+        function showResultPage(name, type, detail, vote, time) {
+            // Populate Data
+            document.getElementById('result-name').innerText = name;
+            document.getElementById('result-type').innerText = (type === 'student' ? 'นักเรียน' : (type === 'teacher' ? 'ครู/บุคลากร' : 'ผู้บริหาร'));
+            document.getElementById('result-detail').innerText = detail;
+            document.getElementById('result-vote').innerText = vote;
+            document.getElementById('result-timestamp').innerText = time;
+
+            // Go to Step 3
+            switchStep(3);
+        }
+
+        function showError(msg) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'แจ้งเตือน',
+                text: msg,
+                confirmButtonColor: '#374151'
+            });
+        }
+    </script>
+</body>
+</html>
